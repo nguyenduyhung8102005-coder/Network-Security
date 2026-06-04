@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox spacing="15.0" style="-fx-background-color: #f4f6f9; -fx-padding: 15;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.anm.digisign.controller.MainViewController">
+    <Label text="HỆ THỐNG XÁC THỰC CHỮ KÝ SỐ RSA &amp; KIỂM TRA SỬA ĐỔI" textFill="#1e3d59">
+        <font>
+            <Font name="System Bold" size="16.0" />
+        </font>
+    </Label>
+    <Separator />
+
+    <VBox spacing="8.0" style="-fx-border-color: #d1d8e0; -fx-border-radius: 5; -fx-padding: 10; -fx-background-color: white;">
+        <Label text="1. Quản lý cặp khóa RSA" textFill="#17b978">
+            <font>
+                <Font name="System Bold" size="14.0" />
+            </font>
+        </Label>
+        <HBox spacing="10.0" alignment="CENTER_LEFT">
+            <Button text="Sinh cặp khóa mới" onAction="#handleGenerateKeys" style="-fx-background-color: #17b978; -fx-text-fill: white;" />
+            <Button text="Xuất Public Key" onAction="#handleExportPublicKey" style="-fx-background-color: #4b5d67; -fx-text-fill: white;" />
+            <Button text="Xuất Private Key" onAction="#handleExportPrivateKey" style="-fx-background-color: #4b5d67; -fx-text-fill: white;" />
+        </HBox>
+        <Label fx:id="lblKeyStatus" text="Trạng thái khóa: Chưa khởi tạo cặp khóa." textFill="#777777" />
+    </VBox>
+
+    <VBox spacing="8.0" style="-fx-border-color: #d1d8e0; -fx-border-radius: 5; -fx-padding: 10; -fx-background-color: white;">
+        <Label text="2. Ký số văn bản" textFill="#ff6f3c">
+            <font>
+                <Font name="System Bold" size="14.0" />
+            </font>
+        </Label>
+        <GridPane hgap="10.0" vgap="8.0">
+            <columnConstraints>
+                <ColumnConstraints minWidth="120.0" />
+                <ColumnConstraints hgrow="ALWAYS" />
+                <ColumnConstraints minWidth="80.0" />
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints />
+            </rowConstraints>
+            <children>
+                <Label text="Chọn file văn bản:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                <TextField fx:id="txtSignDocPath" editable="false" promptText="Đường dẫn file cần ký (.txt, .pdf, .docx...)" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                <Button text="Chọn File" onAction="#handleSelectSignDoc" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+            </children>
+        </GridPane>
+        <Button text="Thực hiện Ký số" onAction="#handleCreateSignature" style="-fx-background-color: #ff6f3c; -fx-text-fill: white;" />
+    </VBox>
+
+    <VBox spacing="8.0" style="-fx-border-color: #d1d8e0; -fx-border-radius: 5; -fx-padding: 10; -fx-background-color: white;">
+        <Label text="3. Xác thực &amp; Kiểm tra sửa đổi văn bản" textFill="#3f72af">
+            <font>
+                <Font name="System Bold" size="14.0" />
+            </font>
+        </Label>
+        <GridPane hgap="10.0" vgap="8.0">
+            <columnConstraints>
+                <ColumnConstraints minWidth="120.0" />
+                <ColumnConstraints hgrow="ALWAYS" />
+                <ColumnConstraints minWidth="80.0" />
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints />
+                <RowConstraints />
+                <RowConstraints />
+            </rowConstraints>
+            <children>
+                <Label text="File văn bản kiểm tra:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                <TextField fx:id="txtVerifyDocPath" editable="false" promptText="Chọn file văn bản hiện tại để đối soát" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                <Button text="Chọn File" onAction="#handleSelectVerifyDoc" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+
+                <Label text="File chữ ký đính kèm:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                <TextField fx:id="txtVerifySigPath" editable="false" promptText="Chọn file chữ ký .sig tương ứng" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                <Button text="Chọn File" onAction="#handleSelectVerifySig" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+
+                <Label text="Nhập Public Key người ký:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                <TextField fx:id="txtVerifyPubKeyPath" editable="false" promptText="Chọn file Public Key người gửi (.pub)" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                <Button text="Chọn File" onAction="#handleSelectVerifyPubKey" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+            </children>
+        </GridPane>
+        <Button text="Kiểm Tra Tính Toàn Vẹn" onAction="#handleVerifyDocument" style="-fx-background-color: #3f72af; -fx-text-fill: white;" />
+        <Label fx:id="lblVerificationResult" text="Kết quả kiểm tra: Chưa thực hiện đối soát." textFill="#777777" />
+    </VBox>
+</VBox>

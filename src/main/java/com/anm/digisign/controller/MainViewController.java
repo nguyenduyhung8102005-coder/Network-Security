@@ -8,6 +8,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.scene.Node;
@@ -54,7 +55,6 @@ public class MainViewController {
     @FXML
     public void handleGenerateKeys(ActionEvent event) {
         try {
-            // 🔥 ĐÃ SỬA: Sử dụng trực tiếp manager được Spring quản lý thay vì tạo local
             currentKeyPair = keyGeneratorManager.generateKeyPair();
 
             this.currentPrivateKey = currentKeyPair.getPrivate();
@@ -82,7 +82,6 @@ public class MainViewController {
             return;
         }
         try {
-            // Gợi ý: Lưu thẳng file .pub ra máy người dùng để Khối 3 dùng luôn thay vì chỉ log console
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Lưu file Public Key");
             fileChooser.setInitialFileName("publicKey.pub");
@@ -92,7 +91,6 @@ public class MainViewController {
             File fileToSave = fileChooser.showSaveDialog(stage);
 
             if (fileToSave != null) {
-                // Xuất file dạng nhị phân mã hóa chuẩn X.509 dể tí nữa dễ đọc lại
                 Files.write(fileToSave.toPath(), currentPublicKey.getEncoded());
                 showAlert("Thành công", "Đã xuất file Public Key tại:\n" + fileToSave.getAbsolutePath(), Alert.AlertType.INFORMATION);
             }
@@ -114,13 +112,12 @@ public class MainViewController {
             String privateKeyBase64 = Base64.getEncoder().encodeToString(currentPrivateKey.getEncoded());
             System.out.println("--- PRIVATE KEY (Base64) ---");
             System.out.println(privateKeyBase64);
-            // Có thể bổ sung logic lưu file .pri tương tự như Public Key khi cần bảo mật
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    // --- KHỐI 2: KÝ SỐ VĂN BẢN ---
+    // --- KHỐI 2: KÝ SỐ VĂN BẢN (ĐƠN & HÀNG LOẠT) ---
 
     @FXML
     public void handleSelectSignDoc(ActionEvent event) {
@@ -164,6 +161,48 @@ public class MainViewController {
         } catch (Exception e) {
             e.printStackTrace();
             showAlert("Lỗi", "Có lỗi xảy ra trong quá trình ký số: " + e.getMessage(), Alert.AlertType.ERROR);
+        }
+    }
+
+    /**
+     * TÍNH NĂNG MỚI: Xử lý ký số hàng loạt (Batch Signing)
+     */
+    @FXML
+    public void handleBatchSign(ActionEvent event) {
+        if (currentPrivateKey == null) {
+            showAlert("Lỗi", "Chưa có Private Key! Vui lòng sinh cặp khóa trước.", Alert.AlertType.ERROR);
+            return;
+        }
+
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle("Chọn thư mục chứa các văn bản cần ký");
+        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+        File selectedDir = directoryChooser.showDialog(stage);
+
+        if (selectedDir != null && selectedDir.isDirectory()) {
+            // Lọc các file văn bản (bạn có thể mở rộng định dạng nếu cần)
+            File[] files = selectedDir.listFiles((dir, name) ->
+                    name.endsWith(".txt") || name.endsWith(".pdf") || name.endsWith(".docx"));
+
+            if (files != null && files.length > 0) {
+                int successCount = 0;
+                for (File file : files) {
+                    try {
+                        byte[] fileBytes = Files.readAllBytes(file.toPath());
+                        byte[] hashBytes = hashService.computeHash(fileBytes);
+                        byte[] signatureBytes = rsaService.encryptWithPrivateKey(hashBytes, currentPrivateKey);
+
+                        String sigPath = file.getAbsolutePath() + ".sig";
+                        Files.write(Paths.get(sigPath), signatureBytes);
+                        successCount++;
+                    } catch (Exception e) {
+                        System.err.println("Lỗi khi ký file: " + file.getName() + " - " + e.getMessage());
+                    }
+                }
+                showAlert("Hoàn tất", "Đã ký thành công " + successCount + "/" + files.length + " tệp trong thư mục.", Alert.AlertType.INFORMATION);
+            } else {
+                showAlert("Thông báo", "Không tìm thấy tệp văn bản hợp lệ nào trong thư mục đã chọn.", Alert.AlertType.WARNING);
+            }
         }
     }
 
@@ -228,26 +267,38 @@ public class MainViewController {
             // 2. Khôi phục PublicKey từ mảng byte
             PublicKey publicKey = keyGeneratorManager.getPublicKeyFromBytes(pubKeyBytes);
 
-            // 3. Băm file văn bản hiện tại (Kết quả SHA-256 luôn cố định là 32 bytes)
+            // 3. Băm file văn bản hiện tại để lấy mã băm thực tế
             byte[] currentHash = hashService.computeHash(docBytes);
 
-            // 🔥 SỬA TẠI ĐÂY: Tham số đầu tiên phải là mảng byte của CHỮ KÝ (sigBytes), KHÔNG ĐƯỢC truyền docBytes
-            byte[] decryptedHash = rsaService.decryptWithPublicKey(sigBytes, publicKey);
+            // 4. BƯỚC KIỂM TRA CHỮ KÝ: Tách riêng try-catch để phân loại lỗi chữ ký
+            byte[] decryptedHash;
+            try {
+                // Cố gắng giải mã chữ ký bằng Public Key
+                decryptedHash = rsaService.decryptWithPublicKey(sigBytes, publicKey);
+            } catch (Exception signatureException) {
+                // Lỗi ném ra ở đây nghĩa là giải mã thất bại -> Chữ ký sai cấu trúc hoặc sai Public Key
+                System.err.println("Lỗi giải mã chữ ký: " + signatureException.getMessage());
+                lblVerificationResult.setText("KẾT QUẢ: CẢNH BÁO! Chữ ký KHÔNG HỢP LỆ (hoặc sai khóa)!");
+                lblVerificationResult.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+                return; // Dừng tiến trình tại đây, không so sánh băm nữa
+            }
 
-            // 4. So sánh mã băm vừa giải mã từ chữ ký với mã băm của văn bản hiện tại
+            // 5. BƯỚC KIỂM TRA VĂN BẢN: Nếu giải mã thành công, đối chiếu 2 mã băm
             boolean isIdentical = java.util.Arrays.equals(currentHash, decryptedHash);
 
             if (isIdentical) {
                 lblVerificationResult.setText("KẾT QUẢ: Văn bản TOÀN VẸN, chữ ký HỢP LỆ!");
                 lblVerificationResult.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
             } else {
-                lblVerificationResult.setText("KẾT QUẢ: CẢNH BÁO! Văn bản đã bị SỬA ĐỔI hoặc chữ ký SAI!");
+                // Giải mã được chữ ký nhưng mã băm không khớp -> File văn bản đã bị sửa nội dung
+                lblVerificationResult.setText("KẾT QUẢ: CẢNH BÁO! Văn bản đã bị SỬA ĐỔI!");
                 lblVerificationResult.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
             }
 
         } catch (Exception e) {
+            // Các lỗi ngoài luồng như không tìm thấy file, hỏng đường dẫn...
             e.printStackTrace();
-            lblVerificationResult.setText("Lỗi xác thực: " + e.getMessage());
+            lblVerificationResult.setText("Lỗi hệ thống hoặc đọc file: " + e.getMessage());
             lblVerificationResult.setStyle("-fx-text-fill: orange;");
         }
     }

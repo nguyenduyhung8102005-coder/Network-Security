@@ -36,7 +36,7 @@ public class DigisignApplication extends Application {
 
 		// Cấu hình giao diện cửa sổ ứng dụng
 		primaryStage.setTitle("Hệ thống Xác thực Chữ ký số RSA");
-		primaryStage.setScene(new Scene(root, 750, 550));
+		primaryStage.setScene(new Scene(root, 960, 720));
 		primaryStage.setResizable(false);
 		primaryStage.show();
 	}

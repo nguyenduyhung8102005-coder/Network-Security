@@ -1,0 +1,24 @@
+/* Tùy chỉnh màu mặc định của các Tab chưa được chọn */
+.tab-pane .tab {
+    -fx-background-color: #e2e8f0;
+}
+
+/* Tùy chỉnh chữ mặc định của các Tab chưa được chọn */
+.tab-pane .tab .tab-label {
+    -fx-text-fill: #334155;
+}
+
+/* Khi người dùng click chọn Tab (Trạng thái Selected) */
+.tab-pane .tab:selected {
+    -fx-background-color: #3b82f6; /* Đổi màu nền thành Xanh dương */
+}
+
+/* Đổi màu chữ của Tab đang được chọn thành Trắng */
+.tab-pane .tab:selected .tab-label {
+    -fx-text-fill: white; /* Chữ trắng */
+}
+
+/* (Tùy chọn) Xóa viền màu xanh nhạt xuất hiện khi focus vào tabPane */
+.tab-pane:focused .tab-header-area .headers-region .tab:selected .focus-indicator {
+    -fx-border-width: 0;
+}

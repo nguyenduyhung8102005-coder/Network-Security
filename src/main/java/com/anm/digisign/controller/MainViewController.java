@@ -3,7 +3,6 @@ package com.anm.digisign.controller;
 import com.anm.digisign.crypto.HashService;
 import com.anm.digisign.crypto.KeyGeneratorManager;
 import com.anm.digisign.crypto.RSAService;
-// --- IMPORT HAI MODEL ĐÃ TÁCH RIÊNG ---
 import com.anm.digisign.model.SignRecord;
 import com.anm.digisign.model.VerifyRecord;
 
@@ -28,9 +27,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
@@ -44,6 +45,9 @@ public class MainViewController {
     @FXML private TextField txtVerifyPubKeyPath;
     @FXML private Label lblKeyStatus;
     @FXML private Label lblVerificationResult;
+
+    // --- KHAI BÁO THÊM CONTROL: ĐƯỜNG DẪN PRIVATE KEY ĐỂ KÝ ---
+    @FXML private TextField txtSignPrivateKeyPath;
 
     // --- KHAI BÁO THÊM LABEL ĐỂ HIỂN THỊ SỐ LƯỢNG LÊN TAB TỔNG QUAN ---
     @FXML private Label lblSignedCount;
@@ -60,12 +64,10 @@ public class MainViewController {
     @FXML private TableColumn<VerifyRecord, String> colVerifyDocName;
     @FXML private TableColumn<VerifyRecord, String> colVerifyResult;
 
-    // Danh sách lưu trữ dữ liệu để hiển thị lên TableView
     private final ObservableList<SignRecord> signRecords = FXCollections.observableArrayList();
     private final ObservableList<VerifyRecord> verifyRecords = FXCollections.observableArrayList();
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    // --- TẬP HỢP TẤT CẢ BEAN SERVICE LÊN ĐẦU CLASS ---
     @Autowired
     private KeyGeneratorManager keyGeneratorManager;
 
@@ -75,27 +77,20 @@ public class MainViewController {
     @Autowired
     private RSAService rsaService;
 
-    // --- BIẾN TRẠNG THÁI TOÀN CỤC ---
     private KeyPair currentKeyPair;
     private PrivateKey currentPrivateKey;
     private PublicKey currentPublicKey;
 
-    // --- CÁC BIẾN ĐẾM SỐ LƯỢNG VĂN BẢN ---
     private int signedCount = 0;
     private int verifiedCount = 0;
 
-    /**
-     * Phương thức khởi tạo cấu hình TableView của JavaFX
-     */
     @FXML
     public void initialize() {
-        // Cấu hình các cột cho bảng Lịch sử ký số
         if (colSignTime != null) colSignTime.setCellValueFactory(new PropertyValueFactory<>("time"));
         if (colSignDocName != null) colSignDocName.setCellValueFactory(new PropertyValueFactory<>("docName"));
         if (colSignStatus != null) colSignStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
         if (tblSignHistory != null) tblSignHistory.setItems(signRecords);
 
-        // Cấu hình các cột cho bảng Lịch sử xác thực
         if (colVerifyTime != null) colVerifyTime.setCellValueFactory(new PropertyValueFactory<>("time"));
         if (colVerifyDocName != null) colVerifyDocName.setCellValueFactory(new PropertyValueFactory<>("docName"));
         if (colVerifyResult != null) colVerifyResult.setCellValueFactory(new PropertyValueFactory<>("result"));
@@ -153,7 +148,7 @@ public class MainViewController {
     }
 
     /**
-     * 3. Xử lý sự kiện bấm nút "Xuất Private Key"
+     * 3. Xử lý sự kiện bấm nút "Xuất Private Key" -> ĐÃ CHUYỂN THÀNH XUẤT FILE
      */
     @FXML
     public void handleExportPrivateKey(ActionEvent event) {
@@ -162,15 +157,43 @@ public class MainViewController {
             return;
         }
         try {
-            String privateKeyBase64 = Base64.getEncoder().encodeToString(currentPrivateKey.getEncoded());
-            System.out.println("--- PRIVATE KEY (Base64) ---");
-            System.out.println(privateKeyBase64);
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Lưu file Private Key");
+            fileChooser.setInitialFileName("privateKey.key");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Private Key (*.key)", "*.key"));
+
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            File fileToSave = fileChooser.showSaveDialog(stage);
+
+            if (fileToSave != null) {
+                // Xuất khóa dưới dạng chuỗi mã hóa Base64 để người dùng dễ đọc/lưu trữ bằng văn bản
+                String privateKeyBase64 = Base64.getEncoder().encodeToString(currentPrivateKey.getEncoded());
+                Files.write(fileToSave.toPath(), privateKeyBase64.getBytes());
+                showAlert("Thành công", "Đã xuất file Private Key tại:\n" + fileToSave.getAbsolutePath(), Alert.AlertType.INFORMATION);
+            }
         } catch (Exception e) {
             e.printStackTrace();
+            showAlert("Lỗi", "Không thể xuất file Private Key: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
     // --- KHỐI 2: KÝ SỐ VĂN BẢN (ĐƠN & HÀNG LOẠT) ---
+
+    /**
+     * THÀNH PHẦN MỚI: Chọn file Private Key từ máy tính để ký số
+     */
+    @FXML
+    public void handleSelectSignPrivateKey(ActionEvent event) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Chọn file Private Key để ký");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Private Key (*.key)", "*.key"));
+        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+        File selectedFile = fileChooser.showOpenDialog(stage);
+
+        if (selectedFile != null) {
+            txtSignPrivateKeyPath.setText(selectedFile.getAbsolutePath());
+        }
+    }
 
     @FXML
     public void handleSelectSignDoc(ActionEvent event) {
@@ -193,18 +216,20 @@ public class MainViewController {
             return;
         }
 
-        if (currentPrivateKey == null) {
-            showAlert("Lỗi", "Chưa tìm thấy Private Key! Vui lòng sinh cặp khóa trước.", Alert.AlertType.ERROR);
-            return;
-        }
-
         File file = new File(docPath);
         String timestamp = LocalDateTime.now().format(timeFormatter);
 
         try {
+            // Lấy Private Key (Ưu tiên từ file được chọn, nếu không có mới dùng khóa vừa tạo trong bộ nhớ)
+            PrivateKey privateKeyToUse = getPrivateKeyToUse();
+            if (privateKeyToUse == null) {
+                showAlert("Lỗi", "Chưa tìm thấy Private Key! Vui lòng chọn file Private Key hoặc chọn 'Sinh cặp khóa mới'.", Alert.AlertType.ERROR);
+                return;
+            }
+
             byte[] fileBytes = Files.readAllBytes(Paths.get(docPath));
             byte[] hashBytes = hashService.computeHash(fileBytes);
-            byte[] signatureBytes = rsaService.encryptWithPrivateKey(hashBytes, currentPrivateKey);
+            byte[] signatureBytes = rsaService.encryptWithPrivateKey(hashBytes, privateKeyToUse);
 
             String sigPath = docPath + ".sig";
             try (FileOutputStream fos = new FileOutputStream(sigPath)) {
@@ -214,80 +239,101 @@ public class MainViewController {
             System.out.println("Ký số thành công! File chữ ký lưu tại: " + sigPath);
             showAlert("Thành công", "Đã ký số thành công!\nFile chữ ký: " + sigPath, Alert.AlertType.INFORMATION);
 
-            // 🔥 LOGIC: Tăng số lượng văn bản đã ký đơn thành công
             signedCount++;
             if (lblSignedCount != null) {
                 lblSignedCount.setText(String.valueOf(signedCount));
             }
 
-            // 🔥 LOGIC: Ghi nhận lịch sử ký đơn thành công
             signRecords.add(new SignRecord(timestamp, file.getName(), "Thành công (Đơn)"));
 
         } catch (Exception e) {
             e.printStackTrace();
             showAlert("Lỗi", "Có lỗi xảy ra trong quá trình ký số: " + e.getMessage(), Alert.AlertType.ERROR);
-
-            // 🔥 LOGIC: Ghi nhận lịch sử ký đơn thất bại
             signRecords.add(new SignRecord(timestamp, file.getName(), "Thất bại: " + e.getMessage()));
         }
     }
 
     /**
-     * TÍNH NĂNG MỚI: Xử lý ký số hàng loạt (Batch Signing)
+     * Xử lý ký số hàng loạt (Batch Signing)
      */
     @FXML
     public void handleBatchSign(ActionEvent event) {
-        if (currentPrivateKey == null) {
-            showAlert("Lỗi", "Chưa có Private Key! Vui lòng sinh cặp khóa trước.", Alert.AlertType.ERROR);
-            return;
-        }
-
-        DirectoryChooser directoryChooser = new DirectoryChooser();
-        directoryChooser.setTitle("Chọn thư mục chứa các văn bản cần ký");
-        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        File selectedDir = directoryChooser.showDialog(stage);
-
-        if (selectedDir != null && selectedDir.isDirectory()) {
-            File[] files = selectedDir.listFiles((dir, name) ->
-                    name.endsWith(".txt") || name.endsWith(".pdf") || name.endsWith(".docx"));
-
-            if (files != null && files.length > 0) {
-                int successCount = 0;
-                String timestamp = LocalDateTime.now().format(timeFormatter);
-
-                for (File file : files) {
-                    try {
-                        byte[] fileBytes = Files.readAllBytes(file.toPath());
-                        byte[] hashBytes = hashService.computeHash(fileBytes);
-                        byte[] signatureBytes = rsaService.encryptWithPrivateKey(hashBytes, currentPrivateKey);
-
-                        String sigPath = file.getAbsolutePath() + ".sig";
-                        Files.write(Paths.get(sigPath), signatureBytes);
-                        successCount++;
-
-                        // 🔥 LOGIC: Ghi từng file trong lô vào bảng lịch sử
-                        signRecords.add(new SignRecord(timestamp, file.getName(), "Thành công (Batch)"));
-                    } catch (Exception e) {
-                        System.err.println("Lỗi khi ký file: " + file.getName() + " - " + e.getMessage());
-                        // 🔥 LOGIC: Ghi nhận lỗi file cụ thể vào bảng lịch sử
-                        signRecords.add(new SignRecord(timestamp, file.getName(), "Lỗi lô: " + e.getMessage()));
-                    }
-                }
-                showAlert("Hoàn tất", "Đã ký thành công " + successCount + "/" + files.length + " tệp trong thư mục.", Alert.AlertType.INFORMATION);
-
-                if (successCount > 0) {
-                    signedCount += successCount;
-                    if (lblSignedCount != null) {
-                        lblSignedCount.setText(String.valueOf(signedCount));
-                    }
-                }
-            } else {
-                showAlert("Thông báo", "Không tìm thấy tệp văn bản hợp lệ nào trong thư mục đã chọn.", Alert.AlertType.WARNING);
+        try {
+            PrivateKey privateKeyToUse = getPrivateKeyToUse();
+            if (privateKeyToUse == null) {
+                showAlert("Lỗi", "Chưa tìm thấy Private Key! Vui lòng chọn file Private Key hoặc chọn 'Sinh cặp khóa mới'.", Alert.AlertType.ERROR);
+                return;
             }
+
+            DirectoryChooser directoryChooser = new DirectoryChooser();
+            directoryChooser.setTitle("Chọn thư mục chứa các văn bản cần ký");
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            File selectedDir = directoryChooser.showDialog(stage);
+
+            if (selectedDir != null && selectedDir.isDirectory()) {
+                File[] files = selectedDir.listFiles((dir, name) ->
+                        name.endsWith(".txt") || name.endsWith(".pdf") || name.endsWith(".docx"));
+
+                if (files != null && files.length > 0) {
+                    int successCount = 0;
+                    String timestamp = LocalDateTime.now().format(timeFormatter);
+
+                    for (File file : files) {
+                        try {
+                            byte[] fileBytes = Files.readAllBytes(file.toPath());
+                            byte[] hashBytes = hashService.computeHash(fileBytes);
+                            byte[] signatureBytes = rsaService.encryptWithPrivateKey(hashBytes, privateKeyToUse);
+
+                            String sigPath = file.getAbsolutePath() + ".sig";
+                            Files.write(Paths.get(sigPath), signatureBytes);
+                            successCount++;
+
+                            signRecords.add(new SignRecord(timestamp, file.getName(), "Thành công (Batch)"));
+                        } catch (Exception e) {
+                            System.err.println("Lỗi khi ký file: " + file.getName() + " - " + e.getMessage());
+                            signRecords.add(new SignRecord(timestamp, file.getName(), "Lỗi lô: " + e.getMessage()));
+                        }
+                    }
+                    showAlert("Hoàn tất", "Đã ký thành công " + successCount + "/" + files.length + " tệp trong thư mục.", Alert.AlertType.INFORMATION);
+
+                    if (successCount > 0) {
+                        signedCount += successCount;
+                        if (lblSignedCount != null) {
+                            lblSignedCount.setText(String.valueOf(signedCount));
+                        }
+                    }
+                } else {
+                    showAlert("Thông báo", "Không tìm thấy tệp văn bản hợp lệ nào trong thư mục đã chọn.", Alert.AlertType.WARNING);
+                }
+            }
+        } catch (Exception e) {
+            showAlert("Lỗi", "Lỗi xử lý ký hàng loạt: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
-    // --- KHỐI 3: XÁC THỰC & KIỂM TRA SỬA ĐỔI VĂN BẢN ---
+    /**
+     * HÀM TRỢ GIÚP: Xác định thực thể PrivateKey nào được chọn để thực hiện ký số
+     */
+    private PrivateKey getPrivateKeyToUse() throws Exception {
+        String keyPath = txtSignPrivateKeyPath.getText();
+
+        // Nếu người dùng có chọn file Private Key ngoài hệ thống
+        if (keyPath != null && !keyPath.trim().isEmpty()) {
+            byte[] keyBytes = Files.readAllBytes(Paths.get(keyPath.trim()));
+            String keyStr = new String(keyBytes).trim();
+
+            // Giải mã chuỗi Base64 để lấy byte gốc của khóa mã hóa PKCS8
+            byte[] decodedKey = Base64.getDecoder().decode(keyStr);
+            PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decodedKey);
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            return kf.generatePrivate(spec);
+        }
+
+        // Nếu không chọn file, trả về khóa tạm thời vừa sinh
+        return currentPrivateKey;
+    }
+
+    // --- KHỐI 3: XÁC THỰC & KIỂM TRA SỬA ĐỔI VĂN BẢN (GIỮ NGUYÊN) ---
 
     @FXML
     public void handleSelectVerifyDoc(ActionEvent event) {
@@ -359,7 +405,6 @@ public class MainViewController {
                 lblVerificationResult.setText("KẾT QUẢ: CẢNH BÁO! Chữ ký KHÔNG HỢP LỆ (hoặc sai khóa)!");
                 lblVerificationResult.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
 
-                // 🔥 LOGIC: Ghi log xác thực thất bại do lỗi chữ ký
                 verifyRecords.add(new VerifyRecord(timestamp, file.getName(), "Chữ ký KHÔNG HỢP LỆ"));
                 return;
             }
@@ -374,14 +419,10 @@ public class MainViewController {
             if (isIdentical) {
                 lblVerificationResult.setText("KẾT QUẢ: Văn bản TOÀN VẸN, chữ ký HỢP LỆ!");
                 lblVerificationResult.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
-
-                // 🔥 LOGIC: Ghi log tài liệu Toàn vẹn
                 verifyRecords.add(new VerifyRecord(timestamp, file.getName(), "Toàn vẹn (Hợp lệ)"));
             } else {
                 lblVerificationResult.setText("KẾT QUẢ: CẢNH BÁO! Văn bản đã bị SỬA ĐỔI!");
                 lblVerificationResult.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
-
-                // 🔥 LOGIC: Ghi log phát hiện tài liệu bị thay đổi
                 verifyRecords.add(new VerifyRecord(timestamp, file.getName(), "CẢNH BÁO: Bị sửa đổi"));
             }
 
@@ -389,8 +430,6 @@ public class MainViewController {
             e.printStackTrace();
             lblVerificationResult.setText("Lỗi hệ thống hoặc đọc file: " + e.getMessage());
             lblVerificationResult.setStyle("-fx-text-fill: orange;");
-
-            // 🔥 LOGIC: Ghi nhận lỗi hệ thống vào lịch sử
             verifyRecords.add(new VerifyRecord(timestamp, file.getName(), "Lỗi đọc file/Hệ thống"));
         }
     }

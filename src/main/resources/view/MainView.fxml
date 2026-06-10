@@ -23,7 +23,7 @@
         <children>
             <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                 <children>
-                    
+
                     <Label text="Hệ Thống Xác Thực Chữ Ký Số RSA &amp; Kiểm Tra Toàn Vẹn" textFill="#0f172a">
                         <font>
                             <Font name="Segoe UI Bold" size="22.0" />
@@ -170,6 +170,14 @@
                                     </font>
                                 </Label>
                             </VBox>
+
+                            <HBox alignment="CENTER_LEFT" spacing="15.0">
+                                <children>
+                                    <Label text="Chọn Private Key:" prefWidth="120.0" />
+                                    <TextField fx:id="txtSignPrivateKeyPath" HBox.hgrow="ALWAYS" promptText="Đường dẫn file Private Key (.key hoặc .txt)..." />
+                                    <Button text="Chọn File" onAction="#handleSelectSignPrivateKey" />
+                                </children>
+                            </HBox>
 
                             <Separator style="-fx-opacity: 0.4;" />
 

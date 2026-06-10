@@ -3,11 +3,20 @@ package com.anm.digisign.controller;
 import com.anm.digisign.crypto.HashService;
 import com.anm.digisign.crypto.KeyGeneratorManager;
 import com.anm.digisign.crypto.RSAService;
+// --- IMPORT HAI MODEL ĐÃ TÁCH RIÊNG ---
+import com.anm.digisign.model.SignRecord;
+import com.anm.digisign.model.VerifyRecord;
+
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -22,6 +31,8 @@ import java.nio.file.Paths;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 
 @Component
@@ -33,6 +44,26 @@ public class MainViewController {
     @FXML private TextField txtVerifyPubKeyPath;
     @FXML private Label lblKeyStatus;
     @FXML private Label lblVerificationResult;
+
+    // --- KHAI BÁO THÊM LABEL ĐỂ HIỂN THỊ SỐ LƯỢNG LÊN TAB TỔNG QUAN ---
+    @FXML private Label lblSignedCount;
+    @FXML private Label lblVerifiedCount;
+
+    // --- KHAI BÁO CÁC CONTROL CHO TAB LỊCH SỬ ---
+    @FXML private TableView<SignRecord> tblSignHistory;
+    @FXML private TableColumn<SignRecord, String> colSignTime;
+    @FXML private TableColumn<SignRecord, String> colSignDocName;
+    @FXML private TableColumn<SignRecord, String> colSignStatus;
+
+    @FXML private TableView<VerifyRecord> tblVerifyHistory;
+    @FXML private TableColumn<VerifyRecord, String> colVerifyTime;
+    @FXML private TableColumn<VerifyRecord, String> colVerifyDocName;
+    @FXML private TableColumn<VerifyRecord, String> colVerifyResult;
+
+    // Danh sách lưu trữ dữ liệu để hiển thị lên TableView
+    private final ObservableList<SignRecord> signRecords = FXCollections.observableArrayList();
+    private final ObservableList<VerifyRecord> verifyRecords = FXCollections.observableArrayList();
+    private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     // --- TẬP HỢP TẤT CẢ BEAN SERVICE LÊN ĐẦU CLASS ---
     @Autowired
@@ -48,6 +79,28 @@ public class MainViewController {
     private KeyPair currentKeyPair;
     private PrivateKey currentPrivateKey;
     private PublicKey currentPublicKey;
+
+    // --- CÁC BIẾN ĐẾM SỐ LƯỢNG VĂN BẢN ---
+    private int signedCount = 0;
+    private int verifiedCount = 0;
+
+    /**
+     * Phương thức khởi tạo cấu hình TableView của JavaFX
+     */
+    @FXML
+    public void initialize() {
+        // Cấu hình các cột cho bảng Lịch sử ký số
+        if (colSignTime != null) colSignTime.setCellValueFactory(new PropertyValueFactory<>("time"));
+        if (colSignDocName != null) colSignDocName.setCellValueFactory(new PropertyValueFactory<>("docName"));
+        if (colSignStatus != null) colSignStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+        if (tblSignHistory != null) tblSignHistory.setItems(signRecords);
+
+        // Cấu hình các cột cho bảng Lịch sử xác thực
+        if (colVerifyTime != null) colVerifyTime.setCellValueFactory(new PropertyValueFactory<>("time"));
+        if (colVerifyDocName != null) colVerifyDocName.setCellValueFactory(new PropertyValueFactory<>("docName"));
+        if (colVerifyResult != null) colVerifyResult.setCellValueFactory(new PropertyValueFactory<>("result"));
+        if (tblVerifyHistory != null) tblVerifyHistory.setItems(verifyRecords);
+    }
 
     /**
      * 1. Xử lý sự kiện bấm nút "Sinh cặp khóa mới"
@@ -145,6 +198,9 @@ public class MainViewController {
             return;
         }
 
+        File file = new File(docPath);
+        String timestamp = LocalDateTime.now().format(timeFormatter);
+
         try {
             byte[] fileBytes = Files.readAllBytes(Paths.get(docPath));
             byte[] hashBytes = hashService.computeHash(fileBytes);
@@ -158,9 +214,21 @@ public class MainViewController {
             System.out.println("Ký số thành công! File chữ ký lưu tại: " + sigPath);
             showAlert("Thành công", "Đã ký số thành công!\nFile chữ ký: " + sigPath, Alert.AlertType.INFORMATION);
 
+            // 🔥 LOGIC: Tăng số lượng văn bản đã ký đơn thành công
+            signedCount++;
+            if (lblSignedCount != null) {
+                lblSignedCount.setText(String.valueOf(signedCount));
+            }
+
+            // 🔥 LOGIC: Ghi nhận lịch sử ký đơn thành công
+            signRecords.add(new SignRecord(timestamp, file.getName(), "Thành công (Đơn)"));
+
         } catch (Exception e) {
             e.printStackTrace();
             showAlert("Lỗi", "Có lỗi xảy ra trong quá trình ký số: " + e.getMessage(), Alert.AlertType.ERROR);
+
+            // 🔥 LOGIC: Ghi nhận lịch sử ký đơn thất bại
+            signRecords.add(new SignRecord(timestamp, file.getName(), "Thất bại: " + e.getMessage()));
         }
     }
 
@@ -180,12 +248,13 @@ public class MainViewController {
         File selectedDir = directoryChooser.showDialog(stage);
 
         if (selectedDir != null && selectedDir.isDirectory()) {
-            // Lọc các file văn bản (bạn có thể mở rộng định dạng nếu cần)
             File[] files = selectedDir.listFiles((dir, name) ->
                     name.endsWith(".txt") || name.endsWith(".pdf") || name.endsWith(".docx"));
 
             if (files != null && files.length > 0) {
                 int successCount = 0;
+                String timestamp = LocalDateTime.now().format(timeFormatter);
+
                 for (File file : files) {
                     try {
                         byte[] fileBytes = Files.readAllBytes(file.toPath());
@@ -195,11 +264,23 @@ public class MainViewController {
                         String sigPath = file.getAbsolutePath() + ".sig";
                         Files.write(Paths.get(sigPath), signatureBytes);
                         successCount++;
+
+                        // 🔥 LOGIC: Ghi từng file trong lô vào bảng lịch sử
+                        signRecords.add(new SignRecord(timestamp, file.getName(), "Thành công (Batch)"));
                     } catch (Exception e) {
                         System.err.println("Lỗi khi ký file: " + file.getName() + " - " + e.getMessage());
+                        // 🔥 LOGIC: Ghi nhận lỗi file cụ thể vào bảng lịch sử
+                        signRecords.add(new SignRecord(timestamp, file.getName(), "Lỗi lô: " + e.getMessage()));
                     }
                 }
                 showAlert("Hoàn tất", "Đã ký thành công " + successCount + "/" + files.length + " tệp trong thư mục.", Alert.AlertType.INFORMATION);
+
+                if (successCount > 0) {
+                    signedCount += successCount;
+                    if (lblSignedCount != null) {
+                        lblSignedCount.setText(String.valueOf(signedCount));
+                    }
+                }
             } else {
                 showAlert("Thông báo", "Không tìm thấy tệp văn bản hợp lệ nào trong thư mục đã chọn.", Alert.AlertType.WARNING);
             }
@@ -255,51 +336,62 @@ public class MainViewController {
             return;
         }
 
+        String docPath = txtVerifyDocPath.getText();
+        File file = new File(docPath);
+        String timestamp = LocalDateTime.now().format(timeFormatter);
+
         try {
             System.out.println("Bắt đầu đối soát tính toàn vẹn dữ liệu...");
             lblVerificationResult.setText("Đang kiểm tra...");
 
-            // 1. Đọc dữ liệu từ các trường dẫn file
-            byte[] docBytes = Files.readAllBytes(Paths.get(txtVerifyDocPath.getText()));
+            byte[] docBytes = Files.readAllBytes(Paths.get(docPath));
             byte[] sigBytes = Files.readAllBytes(Paths.get(txtVerifySigPath.getText()));
             byte[] pubKeyBytes = Files.readAllBytes(Paths.get(txtVerifyPubKeyPath.getText()));
 
-            // 2. Khôi phục PublicKey từ mảng byte
             PublicKey publicKey = keyGeneratorManager.getPublicKeyFromBytes(pubKeyBytes);
-
-            // 3. Băm file văn bản hiện tại để lấy mã băm thực tế
             byte[] currentHash = hashService.computeHash(docBytes);
 
-            // 4. BƯỚC KIỂM TRA CHỮ KÝ: Tách riêng try-catch để phân loại lỗi chữ ký
             byte[] decryptedHash;
             try {
-                // Cố gắng giải mã chữ ký bằng Public Key
                 decryptedHash = rsaService.decryptWithPublicKey(sigBytes, publicKey);
             } catch (Exception signatureException) {
-                // Lỗi ném ra ở đây nghĩa là giải mã thất bại -> Chữ ký sai cấu trúc hoặc sai Public Key
                 System.err.println("Lỗi giải mã chữ ký: " + signatureException.getMessage());
                 lblVerificationResult.setText("KẾT QUẢ: CẢNH BÁO! Chữ ký KHÔNG HỢP LỆ (hoặc sai khóa)!");
                 lblVerificationResult.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
-                return; // Dừng tiến trình tại đây, không so sánh băm nữa
+
+                // 🔥 LOGIC: Ghi log xác thực thất bại do lỗi chữ ký
+                verifyRecords.add(new VerifyRecord(timestamp, file.getName(), "Chữ ký KHÔNG HỢP LỆ"));
+                return;
             }
 
-            // 5. BƯỚC KIỂM TRA VĂN BẢN: Nếu giải mã thành công, đối chiếu 2 mã băm
             boolean isIdentical = java.util.Arrays.equals(currentHash, decryptedHash);
+
+            verifiedCount++;
+            if (lblVerifiedCount != null) {
+                lblVerifiedCount.setText(String.valueOf(verifiedCount));
+            }
 
             if (isIdentical) {
                 lblVerificationResult.setText("KẾT QUẢ: Văn bản TOÀN VẸN, chữ ký HỢP LỆ!");
                 lblVerificationResult.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+
+                // 🔥 LOGIC: Ghi log tài liệu Toàn vẹn
+                verifyRecords.add(new VerifyRecord(timestamp, file.getName(), "Toàn vẹn (Hợp lệ)"));
             } else {
-                // Giải mã được chữ ký nhưng mã băm không khớp -> File văn bản đã bị sửa nội dung
                 lblVerificationResult.setText("KẾT QUẢ: CẢNH BÁO! Văn bản đã bị SỬA ĐỔI!");
                 lblVerificationResult.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+
+                // 🔥 LOGIC: Ghi log phát hiện tài liệu bị thay đổi
+                verifyRecords.add(new VerifyRecord(timestamp, file.getName(), "CẢNH BÁO: Bị sửa đổi"));
             }
 
         } catch (Exception e) {
-            // Các lỗi ngoài luồng như không tìm thấy file, hỏng đường dẫn...
             e.printStackTrace();
             lblVerificationResult.setText("Lỗi hệ thống hoặc đọc file: " + e.getMessage());
             lblVerificationResult.setStyle("-fx-text-fill: orange;");
+
+            // 🔥 LOGIC: Ghi nhận lỗi hệ thống vào lịch sử
+            verifyRecords.add(new VerifyRecord(timestamp, file.getName(), "Lỗi đọc file/Hệ thống"));
         }
     }
 

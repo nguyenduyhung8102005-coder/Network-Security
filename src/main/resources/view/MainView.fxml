@@ -8,6 +8,7 @@
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
@@ -23,7 +24,6 @@
         <children>
             <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                 <children>
-
                     <Label text="Hệ Thống Xác Thực Chữ Ký Số RSA &amp; Kiểm Tra Toàn Vẹn" textFill="#0f172a">
                         <font>
                             <Font name="Segoe UI Bold" size="22.0" />
@@ -57,7 +57,6 @@
                                         <Font name="Segoe UI Bold" size="18.0" />
                                     </font>
                                 </Label>
-
                             </VBox>
 
                             <HBox spacing="30.0" alignment="CENTER">
@@ -156,7 +155,7 @@
 
             <Tab style="-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-font-weight: bold;" text="✍️ 3. Ký Số Văn Bản">
                 <content>
-                    <VBox spacing="25.0" style="-fx-background-color: white; -fx-background-radius: 0 12 12 12; -fx-padding: 40; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.06), 15, 0, 0, 8); -fx-border-color: #e2e8f0; -fx-border-radius: 0 12 12 12; -fx-border-width: 1;">
+                    <VBox spacing="20.0" style="-fx-background-color: white; -fx-background-radius: 0 12 12 12; -fx-padding: 35 40; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.06), 15, 0, 0, 8); -fx-border-color: #e2e8f0; -fx-border-radius: 0 12 12 12; -fx-border-width: 1;">
                         <children>
                             <VBox spacing="8.0">
                                 <Label text="Thực Hiện Ký Số Phê Duyệt" textFill="#0f172a">
@@ -164,7 +163,7 @@
                                         <Font name="Segoe UI Bold" size="18.0" />
                                     </font>
                                 </Label>
-                                <Label text="Hệ thống sẽ băm nội dung tài liệu bằng chuẩn SHA-256, sau đó dùng Private Key để mã hóa mã băm, tạo ra tệp chữ ký số (.sig) chống chối bỏ." textFill="#64748b" wrapText="true">
+                                <Label text="Hệ thống hỗ trợ nhập nội dung văn bản trực tiếp hoặc tải tệp tin từ thiết bị. Dữ liệu sẽ được tự động xử lý bảo mật bằng thuật toán SHA256withRSA." textFill="#64748b" wrapText="true">
                                     <font>
                                         <Font name="Segoe UI" size="14.0" />
                                     </font>
@@ -173,43 +172,44 @@
 
                             <HBox alignment="CENTER_LEFT" spacing="15.0">
                                 <children>
-                                    <Label text="Chọn Private Key:" prefWidth="120.0" />
-                                    <TextField fx:id="txtSignPrivateKeyPath" HBox.hgrow="ALWAYS" promptText="Đường dẫn file Private Key (.key hoặc .txt)..." />
-                                    <Button text="Chọn File" onAction="#handleSelectSignPrivateKey" />
+                                    <Label text="Chọn Private Key:" prefWidth="120.0" style="-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-font-weight: bold;" textFill="#1e293b"/>
+                                    <TextField fx:id="txtSignPrivateKeyPath" HBox.hgrow="ALWAYS" promptText="Đường dẫn file Private Key (.key hoặc .txt)..."
+                                               style="-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 10 15; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px;"/>
+                                    <Button text="Chọn File" onAction="#handleSelectSignPrivateKey" style="-fx-background-color: #f1f5f9; -fx-text-fill: #0f172a; -fx-font-family: 'Segoe UI'; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10 20; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-cursor: hand;" />
                                 </children>
                             </HBox>
 
                             <Separator style="-fx-opacity: 0.4;" />
 
-                            <GridPane hgap="20.0" vgap="15.0">
-                                <columnConstraints>
-                                    <ColumnConstraints minWidth="150.0" />
-                                    <ColumnConstraints hgrow="ALWAYS" />
-                                    <ColumnConstraints minWidth="110.0" />
-                                </columnConstraints>
-                                <rowConstraints>
-                                    <RowConstraints minHeight="45.0" />
-                                </rowConstraints>
+                            <VBox spacing="12.0" VBox.vgrow="ALWAYS">
                                 <children>
-                                    <Label text="Tài liệu cần ký:" textFill="#1e293b">
-                                        <font>
-                                            <Font name="Segoe UI Bold" size="14.0" />
-                                        </font>
-                                    </Label>
-                                    <TextField fx:id="txtSignDocPath" editable="false" promptText="Đường dẫn file văn bản (.txt, .pdf, .docx...)"
-                                               style="-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 10 15; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px;" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-                                    <Button onAction="#handleSelectSignDoc" style="-fx-background-color: #f1f5f9; -fx-text-fill: #0f172a; -fx-font-family: 'Segoe UI'; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10 20; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-cursor: hand;" text="Duyệt File" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                                    <HBox alignment="CENTER_LEFT" spacing="15.0">
+                                        <children>
+                                            <Label text="Nội dung văn bản cần ký số:" textFill="#1e293b" HBox.hgrow="ALWAYS">
+                                                <font>
+                                                    <Font name="Segoe UI Bold" size="14.0" />
+                                                </font>
+                                            </Label>
+                                            <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
+                                                <children>
+                                                    <Button onAction="#handleSelectSignDoc" style="-fx-background-color: #f1f5f9; -fx-text-fill: #0f172a; -fx-font-family: 'Segoe UI'; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 18; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-cursor: hand;" text="📂 Tải nội dung từ File" />
+                                                </children>
+                                            </HBox>
+                                        </children>
+                                    </HBox>
+
+                                    <TextArea fx:id="txtSignInputText" VBox.vgrow="ALWAYS" prefHeight="150.0" promptText="Nhập, dán nội dung văn bản vào đây HOẶC bấm nút phía trên để tải nội dung từ file lên..." wrapText="true"
+                                              style="-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 5; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px;"/>
                                 </children>
-                            </GridPane>
+                            </VBox>
 
                             <HBox alignment="CENTER_LEFT" spacing="20.0">
                                 <children>
                                     <Button onAction="#handleCreateSignature" style="-fx-background-color: #f97316; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 14 28; -fx-effect: dropshadow(three-pass-box, rgba(249,115,22,0.3), 8, 0, 0, 3); -fx-cursor: hand;" text="Ký Số Văn Bản Đơn" />
-
                                     <Button onAction="#handleBatchSign" style="-fx-background-color: #8b5cf6; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 14 28; -fx-effect: dropshadow(three-pass-box, rgba(139,92,246,0.3), 8, 0, 0, 3); -fx-cursor: hand;" text="Ký Hàng Loạt (Batch Mode)" />
                                 </children>
                                 <VBox.margin>
-                                    <Insets top="15.0" />
+                                    <Insets top="10.0" />
                                 </VBox.margin>
                             </HBox>
                         </children>
@@ -221,20 +221,31 @@
                 <content>
                     <VBox spacing="25.0" style="-fx-background-color: white; -fx-background-radius: 0 12 12 12; -fx-padding: 40; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.06), 15, 0, 0, 8); -fx-border-color: #e2e8f0; -fx-border-radius: 0 12 12 12; -fx-border-width: 1;">
                         <children>
-                            <VBox spacing="8.0">
-                                <Label text="Giám Định Tính Toàn Vẹn &amp; Nguồn Gốc" textFill="#0f172a">
-                                    <font>
-                                        <Font name="Segoe UI Bold" size="18.0" />
-                                    </font>
-                                </Label>
-                                <Label text="Sử dụng Public Key của người gửi để giải mã chữ ký, sau đó đối chiếu mã băm nhằm phát hiện bất kỳ sự thay đổi trái phép nào trên văn bản." textFill="#64748b" wrapText="true">
-                                    <font>
-                                        <Font name="Segoe UI" size="14.0" />
-                                    </font>
-                                </Label>
-                            </VBox>
+
 
                             <Separator style="-fx-opacity: 0.4;" />
+
+                            <VBox spacing="12.0" VBox.vgrow="ALWAYS">
+                                <children>
+                                    <HBox alignment="CENTER_LEFT" spacing="15.0">
+                                        <children>
+                                            <Label text="Nội dung văn bản cần kiểm tra:" textFill="#1e293b" HBox.hgrow="ALWAYS">
+                                                <font>
+                                                    <Font name="Segoe UI Bold" size="14.0" />
+                                                </font>
+                                            </Label>
+                                            <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
+                                                <children>
+                                                    <Button onAction="#handleSelectVerifyDoc" style="-fx-background-color: #f1f5f9; -fx-text-fill: #0f172a; -fx-font-family: 'Segoe UI'; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 18; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-cursor: hand;" text="📂 Tải nội dung từ File" />
+                                                </children>
+                                            </HBox>
+                                        </children>
+                                    </HBox>
+
+                                    <TextArea fx:id="txtVerifyInputText" VBox.vgrow="ALWAYS" prefHeight="150.0" promptText="Nhập, dán nội dung văn bản cần kiểm tra vào đây HOẶC bấm nút phía trên để tải nội dung từ file lên..." wrapText="true"
+                                              style="-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 5; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px;"/>
+                                </children>
+                            </VBox>
 
                             <GridPane hgap="20.0" vgap="18.0">
                                 <columnConstraints>
@@ -245,35 +256,25 @@
                                 <rowConstraints>
                                     <RowConstraints minHeight="45.0" />
                                     <RowConstraints minHeight="45.0" />
-                                    <RowConstraints minHeight="45.0" />
                                 </rowConstraints>
                                 <children>
-                                    <Label text="Văn bản cần kiểm tra:" textFill="#1e293b" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                                        <font>
-                                            <Font name="Segoe UI Bold" size="14.0" />
-                                        </font>
-                                    </Label>
-                                    <TextField fx:id="txtVerifyDocPath" editable="false" promptText="Đường dẫn file văn bản hiện tại..."
-                                               style="-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 10 15; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px;" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-                                    <Button onAction="#handleSelectVerifyDoc" style="-fx-background-color: #f1f5f9; -fx-text-fill: #0f172a; -fx-font-family: 'Segoe UI'; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10 20; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-cursor: hand;" text="Duyệt File" GridPane.columnIndex="2" GridPane.rowIndex="0" />
-
-                                    <Label text="Chữ ký đính kèm (.sig):" textFill="#1e293b" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                    <Label text="Chữ ký đính kèm (.sig):" textFill="#1e293b" GridPane.columnIndex="0" GridPane.rowIndex="0">
                                         <font>
                                             <Font name="Segoe UI Bold" size="14.0" />
                                         </font>
                                     </Label>
                                     <TextField fx:id="txtVerifySigPath" editable="false" promptText="Đường dẫn file chữ ký số..."
-                                               style="-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 10 15; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px;" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                    <Button onAction="#handleSelectVerifySig" style="-fx-background-color: #f1f5f9; -fx-text-fill: #0f172a; -fx-font-family: 'Segoe UI'; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10 20; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-cursor: hand;" text="Duyệt File" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                               style="-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 10 15; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px;" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                                    <Button onAction="#handleSelectVerifySig" style="-fx-background-color: #f1f5f9; -fx-text-fill: #0f172a; -fx-font-family: 'Segoe UI'; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10 20; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-cursor: hand;" text="Duyệt File" GridPane.columnIndex="2" GridPane.rowIndex="0" />
 
-                                    <Label text="Public Key người gửi:" textFill="#1e293b" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                                    <Label text="Public Key người gửi:" textFill="#1e293b" GridPane.columnIndex="0" GridPane.rowIndex="1">
                                         <font>
                                             <Font name="Segoe UI Bold" size="14.0" />
                                         </font>
                                     </Label>
                                     <TextField fx:id="txtVerifyPubKeyPath" editable="false" promptText="Đường dẫn file Public Key (.pub)..."
-                                               style="-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 10 15; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px;" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                    <Button onAction="#handleSelectVerifyPubKey" style="-fx-background-color: #f1f5f9; -fx-text-fill: #0f172a; -fx-font-family: 'Segoe UI'; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10 20; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-cursor: hand;" text="Duyệt File" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                               style="-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 10 15; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px;" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                    <Button onAction="#handleSelectVerifyPubKey" style="-fx-background-color: #f1f5f9; -fx-text-fill: #0f172a; -fx-font-family: 'Segoe UI'; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10 20; -fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-cursor: hand;" text="Duyệt File" GridPane.columnIndex="2" GridPane.rowIndex="1" />
                                 </children>
                             </GridPane>
 
